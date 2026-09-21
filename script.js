@@ -1,0 +1,160 @@
+/* =========================================================
+   CONFIGURACIÓN
+   Para usar la API real: crea una cuenta gratuita en
+   https://openweathermap.org/api y pega tu clave aquí.
+   Si la petición falla (sin clave o sin red), la app
+   muestra datos de demostración incluidos abajo.
+   ========================================================= */
+const API_KEY = '';                       // ← tu clave de OpenWeatherMap
+const API_URL = 'https://api.openweathermap.org/data/2.5/weather';
+
+/* ---------- Datos de demostración ---------- */
+const DEMO = {
+  'bogota':      { name:'Bogotá', country:'CO', temp:14.2, feels:13.1, desc:'nubes dispersas', code:'clouds', humidity:78, wind:2.6, pressure:1024, visibility:9000 },
+  'madrid':      { name:'Madrid', country:'ES', temp:24.8, feels:24.2, desc:'cielo despejado', code:'clear', humidity:41, wind:3.4, pressure:1016, visibility:10000 },
+  'buenos aires':{ name:'Buenos Aires', country:'AR', temp:18.6, feels:18.9, desc:'lluvia ligera', code:'rain', humidity:83, wind:5.1, pressure:1009, visibility:7000 },
+  'tokio':       { name:'Tokio', country:'JP', temp:21.3, feels:21.7, desc:'muy nuboso', code:'clouds', humidity:69, wind:4.2, pressure:1013, visibility:10000 },
+  'reikiavik':   { name:'Reikiavik', country:'IS', temp:2.1, feels:-2.4, desc:'nieve ligera', code:'snow', humidity:87, wind:8.9, pressure:995, visibility:4000 },
+  'lima':        { name:'Lima', country:'PE', temp:19.4, feels:19.8, desc:'neblina', code:'mist', humidity:88, wind:2.1, pressure:1012, visibility:3000 },
+  'ciudad de mexico':{ name:'Ciudad de México', country:'MX', temp:22.0, feels:21.4, desc:'lluvia moderada', code:'rain', humidity:72, wind:3.0, pressure:1018, visibility:8000 },
+};
+const normalize = s => s.trim().toLowerCase()
+  .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+/* ---------- Iconos ---------- */
+function iconFor(code){
+  const c = 'var(--accent)', w = 1.5;
+  const icons = {
+    clear: `<circle cx="32" cy="32" r="12" stroke="var(--accent-2)" stroke-width="${w}"/>
+            <g stroke="var(--accent-2)" stroke-width="${w}" stroke-linecap="round">
+            <line x1="32" y1="8" x2="32" y2="14"/><line x1="32" y1="50" x2="32" y2="56"/>
+            <line x1="8" y1="32" x2="14" y2="32"/><line x1="50" y1="32" x2="56" y2="32"/>
+            <line x1="15" y1="15" x2="19" y2="19"/><line x1="45" y1="45" x2="49" y2="49"/>
+            <line x1="49" y1="15" x2="45" y2="19"/><line x1="19" y1="45" x2="15" y2="49"/></g>`,
+    clouds: `<path d="M20 42h24a10 10 0 0 0 0-20 14 14 0 0 0-26 5 8 8 0 0 0 2 15z" stroke="${c}" stroke-width="${w}" fill="none"/>`,
+    rain: `<path d="M20 36h24a10 10 0 0 0 0-20 14 14 0 0 0-26 5 8 8 0 0 0 2 15z" stroke="${c}" stroke-width="${w}" fill="none"/>
+           <g stroke="${c}" stroke-width="${w}" stroke-linecap="round">
+           <line x1="24" y1="44" x2="21" y2="53"/><line x1="33" y1="44" x2="30" y2="53"/><line x1="42" y1="44" x2="39" y2="53"/></g>`,
+    snow: `<path d="M20 36h24a10 10 0 0 0 0-20 14 14 0 0 0-26 5 8 8 0 0 0 2 15z" stroke="${c}" stroke-width="${w}" fill="none"/>
+           <g stroke="${c}" stroke-width="${w}" stroke-linecap="round">
+           <line x1="24" y1="46" x2="24" y2="52"/><line x1="21" y1="49" x2="27" y2="49"/>
+           <line x1="40" y1="46" x2="40" y2="52"/><line x1="37" y1="49" x2="43" y2="49"/></g>`,
+    mist: `<g stroke="${c}" stroke-width="${w}" stroke-linecap="round">
+           <line x1="14" y1="24" x2="48" y2="24"/><line x1="18" y1="32" x2="52" y2="32"/>
+           <line x1="14" y1="40" x2="44" y2="40"/><line x1="20" y1="48" x2="48" y2="48"/></g>`,
+  };
+  return `<svg class="icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">${icons[code] || icons.clouds}</svg>`;
+}
+function mapCode(main){
+  const m = (main || '').toLowerCase();
+  if(m.includes('clear')) return 'clear';
+  if(m.includes('rain') || m.includes('drizzle') || m.includes('thunder')) return 'rain';
+  if(m.includes('snow')) return 'snow';
+  if(m.includes('mist') || m.includes('fog') || m.includes('haze')) return 'mist';
+  return 'clouds';
+}
+
+/* ---------- Elementos ---------- */
+const $form = document.getElementById('form');
+const $city = document.getElementById('city');
+const $go = document.getElementById('go');
+const $out = document.getElementById('output');
+const $note = document.getElementById('note');
+
+/* ---------- Vistas ---------- */
+function showLoading(){
+  $out.innerHTML = `<div class="state"><div class="spinner"></div>Consultando el clima…</div>`;
+}
+function showError(title, msg){
+  $out.innerHTML = `<div class="state error"><strong>${title}</strong>${msg}</div>`;
+}
+function showIdle(){
+  $out.innerHTML = `<div class="state"><strong>Sin búsqueda aún</strong>Escribe una ciudad o elige una de las sugerencias.</div>`;
+}
+function showWeather(d){
+  $out.innerHTML = `
+    <div class="card">
+      <div class="card-top">
+        <div class="place">
+          <h2>${d.name}</h2>
+          <div class="country">${d.country}</div>
+          <div class="desc">${d.desc.charAt(0).toUpperCase() + d.desc.slice(1)}</div>
+        </div>
+        <div class="temp-block">
+          ${iconFor(d.code)}
+          <div class="temp">${Math.round(d.temp)}<sup>°C</sup></div>
+          <div class="feels">Sensación ${Math.round(d.feels)}°</div>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="cell"><div class="k">Humedad</div><div class="v">${d.humidity}%</div></div>
+        <div class="cell"><div class="k">Viento</div><div class="v">${d.wind.toFixed(1)} m/s</div></div>
+        <div class="cell"><div class="k">Presión</div><div class="v">${d.pressure} hPa</div></div>
+        <div class="cell"><div class="k">Visibilidad</div><div class="v">${(d.visibility/1000).toFixed(1)} km</div></div>
+      </div>
+    </div>`;
+}
+
+/* ---------- Lógica ---------- */
+async function fetchWeather(city){
+  if(!API_KEY) throw new Error('no-key');
+  const url = `${API_URL}?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric&lang=es`;
+  const res = await fetch(url);
+  if(res.status === 404) throw new Error('not-found');
+  if(!res.ok) throw new Error('api');
+  const j = await res.json();
+  return {
+    name: j.name,
+    country: j.sys.country,
+    temp: j.main.temp,
+    feels: j.main.feels_like,
+    desc: j.weather[0].description,
+    code: mapCode(j.weather[0].main),
+    humidity: j.main.humidity,
+    wind: j.wind.speed,
+    pressure: j.main.pressure,
+    visibility: j.visibility ?? 10000,
+  };
+}
+
+async function search(city){
+  if(!city.trim()){
+    showError('Falta la ciudad', 'Escribe el nombre de una ciudad para buscar.');
+    return;
+  }
+  $go.disabled = true;
+  $note.hidden = true;
+  showLoading();
+
+  try{
+    const data = await fetchWeather(city);
+    showWeather(data);
+  }catch(err){
+    // Respaldo con datos de demostración
+    const demo = DEMO[normalize(city)];
+    if(demo){
+      showWeather(demo);
+      $note.hidden = false;
+      $note.textContent = API_KEY
+        ? 'No se pudo conectar con la API. Mostrando datos de demostración.'
+        : 'Datos de demostración. Agrega tu clave de OpenWeatherMap en el código para consultar el clima en vivo.';
+    }else if(err.message === 'not-found'){
+      showError('Ciudad no encontrada', 'Revisa la ortografía e intenta de nuevo.');
+    }else{
+      showError('No se encontró esa ciudad',
+        'Sin conexión a la API solo están disponibles las ciudades de ejemplo: ' +
+        Object.values(DEMO).map(d => d.name).join(', ') + '.');
+    }
+  }finally{
+    $go.disabled = false;
+  }
+}
+
+/* ---------- Eventos ---------- */
+$form.addEventListener('submit', e => { e.preventDefault(); search($city.value); });
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => { $city.value = chip.dataset.city; search(chip.dataset.city); });
+});
+
+/* ---------- Inicio ---------- */
+showIdle();

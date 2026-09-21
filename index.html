@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Clima — Consulta el tiempo por ciudad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <h1>Clima</h1>
+  <p class="sub">Busca cualquier ciudad y consulta sus condiciones actuales.</p>
+
+  <form id="form">
+    <input id="city" type="text" placeholder="Ej: Bogotá, Madrid, Tokio" autocomplete="off" aria-label="Ciudad">
+    <button class="go" id="go" type="submit">Buscar</button>
+  </form>
+
+  <div class="chips">
+    <button class="chip" data-city="Bogotá">Bogotá</button>
+    <button class="chip" data-city="Madrid">Madrid</button>
+    <button class="chip" data-city="Buenos Aires">Buenos Aires</button>
+    <button class="chip" data-city="Tokio">Tokio</button>
+    <button class="chip" data-city="Reikiavik">Reikiavik</button>
+  </div>
+
+  <div id="output" aria-live="polite"></div>
+  <p class="note" id="note" hidden></p>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
