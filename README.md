@@ -27,7 +27,7 @@ Aplicación que consulta el clima actual de cualquier ciudad del mundo usando la
    git clone https://github.com/tu-usuario/app-del-clima.git
    ```
 2. Crea una cuenta gratuita en [OpenWeatherMap](https://home.openweathermap.org/users/sign_up) y copia tu API key
-3. Abre `index.html` y pega tu key en la constante `API_KEY` al inicio del `<script>`
+3. Abre `script.js` y pega tu key en la constante `API_KEY` al inicio del `<script>`
 4. Abre el archivo en tu navegador
 
 > **Nota:** Si no configuras una API key, la app funciona igual mostrando datos de demostración para un grupo de ciudades predefinidas (Bogotá, Madrid, Tokio, entre otras).
