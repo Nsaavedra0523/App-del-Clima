@@ -5,7 +5,7 @@
    Si la petición falla (sin clave o sin red), la app
    muestra datos de demostración incluidos abajo.
    ========================================================= */
-const API_KEY = '';                       // ← tu clave de OpenWeatherMap
+const API_KEY = '35315454e167d64814dc3443be19bc31';                       // ← tu clave de OpenWeatherMap
 const API_URL = 'https://api.openweathermap.org/data/2.5/weather';
 
 /* ---------- Datos de demostración ---------- */
