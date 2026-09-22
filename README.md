@@ -2,9 +2,9 @@
 
 Aplicación que consulta el clima actual de cualquier ciudad del mundo usando la API de [OpenWeatherMap](https://openweathermap.org/api).
 
-**Demo en vivo:** [pega aquí tu link de Vercel/Netlify]
+**Demo en vivo:** [https://app-del-clima-beta.vercel.app/]
 
-![Captura de la app](./screenshot.png)
+![Captura de la app](Screenshot.png)
 
 ## Funcionalidades
 
